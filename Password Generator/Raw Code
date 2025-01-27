@@ -1,0 +1,156 @@
+# Variables to store options
+$includeNumbers = $false
+$includeLowercase = $false
+$includeUppercase = $false
+$includeSymbols = $false
+$passwordLength = 8
+
+# Function to generate the password
+function Generate-Password
+{
+	$chars = @()
+	
+	# Add character sets based on selected options
+	if ($includeLowercase)
+	{
+		$chars += (97 .. 122 | ForEach-Object { [char]$_ }) # ASCII range for 'a' to 'z'
+	}
+	
+	if ($includeUppercase)
+	{
+		$chars += (65 .. 90 | ForEach-Object { [char]$_ }) # ASCII range for 'A' to 'Z'
+	}
+	
+	if ($includeNumbers)
+	{
+		$chars += (48 .. 57 | ForEach-Object { [char]$_ }) # ASCII range for '0' to '9'
+	}
+	
+	if ($includeSymbols)
+	{
+		$chars += [char[]]('!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '{', '}', '[', ']')
+	}
+	
+	# Check if any options are selected
+	if ($chars.Count -eq 0)
+	{
+		return "Please select at least one option"
+	}
+	
+	# Generate password of the specified length
+	$password = -join ((1 .. $passwordLength) | ForEach-Object { $chars | Get-Random })
+	return $password
+}
+
+# Event Handlers
+
+$Number_CheckedChanged = {
+	# Toggle inclusion of numbers based on checkbox
+	$includeNumbers = $Number.Checked
+	Write-Host "Include Numbers: $includeNumbers"
+}
+
+$Lowercase_CheckedChanged = {
+	# Toggle inclusion of lowercase letters based on checkbox
+	$includeLowercase = $Lowercase.Checked
+	Write-Host "Include Lowercase: $includeLowercase"
+}
+
+$Uppercase_CheckedChanged = {
+	# Toggle inclusion of uppercase letters based on checkbox
+	$includeUppercase = $Uppercase.Checked
+	Write-Host "Include Uppercase: $includeUppercase"
+}
+
+$Symbol_CheckedChanged = {
+	# Toggle inclusion of symbols based on checkbox
+	$includeSymbols = $Symbol.Checked
+	Write-Host "Include Symbols: $includeSymbols"
+}
+
+$Length_TextChanged = {
+	# Update password length based on input
+	if ([int]::TryParse($Length.Text, [ref]$passwordLength) -and $passwordLength -gt 0)
+	{
+		Write-Host "Password Length: $passwordLength"
+	}
+	else
+	{
+		$passwordLength = 8 # Set a default length if input is invalid
+		Write-Host "Invalid length entered. Defaulting to 8"
+	}
+}
+
+$Generate_Click = {
+	# Ensure options are correctly updated when generating password
+	$includeNumbers = $Number.Checked
+	$includeLowercase = $Lowercase.Checked
+	$includeUppercase = $Uppercase.Checked
+	$includeSymbols = $Symbol.Checked
+	
+	# Debugging Output for Checkboxes
+	Write-Host "Generate Button Clicked:"
+	Write-Host "Include Numbers: $includeNumbers"
+	Write-Host "Include Lowercase: $includeLowercase"
+	Write-Host "Include Uppercase: $includeUppercase"
+	Write-Host "Include Symbols: $includeSymbols"
+	
+	# Check if at least one option is selected
+	if (-not ($includeNumbers -or $includeLowercase -or $includeUppercase -or $includeSymbols))
+	{
+		$YourPassword.Text = "Please select at least one option."
+		return
+	}
+	
+	# Check if password length is valid
+	if ([string]::IsNullOrWhiteSpace($Length.Text) -or -not [int]::TryParse($Length.Text, [ref]$passwordLength) -or $passwordLength -le 0)
+	{
+		$YourPassword.Text = "Please enter a valid length."
+		return
+	}
+	
+	# Generate and display the password
+	$YourPassword.Text = Generate-Password
+}
+
+$YourPassword_TextChanged = {
+	# Can be left empty or used for additional functionality when the password text changes
+}
+
+$PasswordGen_Load = {
+	# Initialize default settings when the form loads
+}
+
+$Clear_form_Click = {
+	# Reset all checkboxes (uncheck them)
+	$Number.Checked = $false
+	$Lowercase.Checked = $false
+	$Uppercase.Checked = $false
+	$Symbol.Checked = $false
+	
+	# Clear the password display
+	$YourPassword.Text = ""
+	
+	# Reset the length input to default
+	$Length.Text = ""
+	
+	# Reset internal variables
+	$includeNumbers = $false
+	$includeLowercase = $false
+	$includeUppercase = $false
+	$includeSymbols = $false
+	$passwordLength = 8
+	
+	Write-Host "Form has been reset."
+}
+
+
+$labelYourPassword_Click={
+	#TODO: Place custom script here
+	
+}
+
+$labelPasswordLength_Click={
+	#TODO: Place custom script here
+	
+}

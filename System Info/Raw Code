@@ -1,0 +1,182 @@
+# Form Load Event
+$formSYSTEMINFODIGITALGEE_Load = {
+	# Boot Time
+	$bootTime = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
+	$labelBootTime.Text = "Boot Time: $bootTime"
+	
+	# Hostname
+	$hostname = $env:COMPUTERNAME
+	$labelHostname.Text = "Hostname: $hostname"
+	
+	# Logged-in User
+	$userLoggedIn = $env:USERNAME
+	$labelUserLoggedIn.Text = "Logged-in User: $userLoggedIn"
+	
+	# IP Address with Adapter Name
+	$ipAddresses = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
+			$_.InterfaceAlias -and (Get-NetAdapter -Name $_.InterfaceAlias -ErrorAction SilentlyContinue).Status -eq "Up"
+		} | ForEach-Object {
+			"$($_.InterfaceAlias): $($_.IPAddress)"
+		}) -join "`n"
+	$labelIpAddress.Text = if ($ipAddresses)
+	{
+		"IP Address(es):`n$ipAddresses"
+	}
+	else
+	{
+		"IP Address(es): None"
+	}
+	
+	# DNS Addresses
+	$dnsAddresses = (Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object {
+			$_.InterfaceAlias -and (Get-NetAdapter -Name $_.InterfaceAlias -ErrorAction SilentlyContinue).Status -eq "Up"
+		} | ForEach-Object {
+			"$($_.InterfaceAlias): $($_.ServerAddresses -join ', ')"
+		}) -join "`n"
+	$labelDNSAddress.Text = if ($dnsAddresses)
+	{
+		"DNS Address(es):`n$dnsAddresses"
+	}
+	else
+	{
+		"DNS Address(es): None"
+	}
+	
+	# Default Gateway with Adapter Name
+	$defaultGateways = (Get-NetRoute -AddressFamily IPv4 -DestinationPrefix "0.0.0.0/0" |
+		ForEach-Object {
+			$interfaceName = $_.InterfaceAlias
+			$gateway = if ($_.NextHop -eq "0.0.0.0")
+			{
+				"None"
+			}
+			else
+			{
+				$_.NextHop
+			}
+			"$interfaceName - Gateway: $gateway"
+		}) -join "`n"
+	$labelDefaultGatewayAddress.Text = if ($defaultGateways)
+	{
+		"Default Gateway(s):`n$defaultGateways"
+	}
+	else
+	{
+		"Default Gateway(s): None"
+	}
+	
+	# MAC Address with Adapter Name
+	$macAddresses = (Get-NetAdapter | Where-Object {
+			$_.Status -eq "Up" -and $_.LinkSpeed -gt 0
+		} | ForEach-Object {
+			"$($_.Name): $($_.MacAddress)"
+		}) -join "`n"
+	$labelMacAddress.Text = if ($macAddresses)
+	{
+		"MAC Address(es):`n$macAddresses"
+	}
+	else
+	{
+		"MAC Address(es): None"
+	}
+	
+	# PC Serial Number
+	$serialNumber = (Get-CimInstance -ClassName Win32_BIOS).SerialNumber
+	$labelPCSerialNumber.Text = if ($serialNumber)
+	{
+		"PC Serial Number: $serialNumber"
+	}
+	else
+	{
+		"PC Serial Number: Not Available"
+	}
+	
+	# Manufacturer
+	$manufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
+	$labelManufacturer.Text = if ($manufacturer)
+	{
+		"Manufacturer: $manufacturer"
+	}
+	else
+	{
+		"Manufacturer: Not Available"
+	}
+	
+	# Model
+	$model = (Get-CimInstance -ClassName Win32_ComputerSystem).Model
+	$labelModel.Text = if ($model)
+	{
+		"Model: $model"
+	}
+	else
+	{
+		"Model: Not Available"
+	}
+	
+	# Proxy Server
+	$proxyServer = (Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings").ProxyServer
+	$labelProxyServer.Text = if ($proxyServer)
+	{
+		"Proxy Server: $proxyServer"
+	}
+	else
+	{
+		"Proxy Server: Not Configured"
+	}
+	
+	# Proxy Exceptions
+	$proxyExceptions = (Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings").ProxyOverride
+	if ($proxyExceptions)
+	{
+		$labelProxyExceptions.Text = "Proxy Exceptions: $proxyExceptions"
+	}
+	else
+	{
+		$labelProxyExceptions.Text = "Proxy Exceptions: Not Configured"
+	}
+}
+
+# COPY button functionality
+$buttonCOPY_Click = {
+	# Combine all displayed information into the specified format
+	$output = @"
+==========SYSTEM INFO=========
+
+Boot Time: $($labelBootTime.Text -replace 'Boot Time: ', '')
+Hostname: $($labelHostname.Text -replace 'Hostname: ', '')
+Logged-in User: $($labelUserLoggedIn.Text -replace 'Logged-in User: ', '')
+PC Serial Number: $($labelPCSerialNumber.Text -replace 'PC Serial Number: ', '')
+Manufacturer: $($labelManufacturer.Text -replace 'Manufacturer: ', '')
+Model: $($labelModel.Text -replace 'Model: ', '')
+
+==========NETWORK INFO=========
+
+IP Address(es):
+$($labelIpAddress.Text -replace 'IP Address\(es\):\n', '')
+DNS Address(es):
+$($labelDNSAddress.Text -replace 'DNS Address\(es\):\n', '')
+Default Gateway Address:
+$($labelDefaultGatewayAddress.Text -replace 'Default Gateway\(s\):\n', '')
+MAC Address(es):
+$($labelMacAddress.Text -replace 'MAC Address\(es\):\n', '')
+
+==========PROXY INFO==========
+
+Proxy Server: $($labelProxyServer.Text -replace 'Proxy Server: ', '')
+Proxy Exceptions: $($labelProxyExceptions.Text -replace 'Proxy Exceptions: ', '')
+"@
+	
+	# Copy the output to the clipboard
+	Set-Clipboard -Value $output
+	
+	# Optional: Display a message indicating success
+	[System.Windows.Forms.MessageBox]::Show("Information copied to clipboard.", "Copy Successful")
+}
+
+# EXIT button functionality
+$buttonEXIT_Click = {
+	# Properly close the form and terminate the script
+	$formSYSTEMINFODIGITALGEE.Dispose()
+	[System.Windows.Forms.Application]::Exit()
+}
+
